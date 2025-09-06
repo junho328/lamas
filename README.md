@@ -4,7 +4,7 @@ LLM collaboration with Multi-Agent Systems
 ### Environment installation
 
 ```shell
-uv venv lamas --python 3.11 && source openr1/bin/activate && uv pip install --upgrade pip
+uv venv lamas --python 3.11 && source lamas/bin/activate && uv pip install --upgrade pip
 ```
 
 > [!TIP]
