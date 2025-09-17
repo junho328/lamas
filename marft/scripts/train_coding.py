@@ -24,6 +24,7 @@ def make_train_env(all_args):
                 dataset_path=all_args.train_dataset_path,
                 horizon=all_args.horizon,
                 mode="train",
+                reward_type=getattr(all_args, 'reward_type', 'binary'),
             )
             env.seed(all_args.seed + rank * 1000)
             return env
@@ -42,6 +43,7 @@ def make_eval_env(all_args):
                 dataset_path=all_args.test_dataset_path,
                 horizon=all_args.horizon,
                 mode="test",
+                reward_type=getattr(all_args, 'reward_type', 'binary'),
             )
             env.seed(all_args.seed + rank * 1000)
             return env
@@ -119,8 +121,8 @@ def main(args):
     if envs is not None:
         envs.close()
 
-    runner.writter.export_scalars_to_json(str(runner.log_dir + "/summary.json"))
-    runner.writter.close()
+    runner.logger.export_scalars_to_json(str(runner.log_dir + "/summary.json"))
+    runner.logger.close()
 
 
 if __name__ == "__main__":

@@ -2,8 +2,8 @@ import os
 import numpy as np
 from tqdm import tqdm
 import torch
-from tensorboardX import SummaryWriter
 from marft.mas import MAS
+from marft.utils.logger import Logger
 
 class MathRunner:
     """Runner class to perform training, evaluation. and data collection. See parent class for details."""
@@ -47,7 +47,32 @@ class MathRunner:
         
         self.run_dir = config["run_dir"]
         self._make_log_dir()
-        self.writter = SummaryWriter(self.log_dir)
+        
+        # Initialize logger with wandb support
+        wandb_config = {
+            "algorithm": self.algo,
+            "num_agents": self.num_agents,
+            "model_name": self.all_args.model_name_or_path,
+            "dataset_name": self.all_args.dataset_name,
+            "learning_rate": self.all_args.lr,
+            "critic_lr": self.all_args.critic_lr,
+            "ppo_epochs": self.all_args.ppo_epoch,
+            "num_mini_batch": self.all_args.num_mini_batch,
+            "episode_length": self.all_args.episode_length,
+            "n_rollout_threads": self.all_args.n_rollout_threads,
+            "context_window": self.all_args.context_window,
+            "max_new_tokens": self.all_args.max_new_tokens,
+            "seed": self.all_args.seed,
+        }
+        
+        self.logger = Logger(
+            log_dir=self.log_dir,
+            use_wandb=getattr(self.all_args, 'use_wandb', False),
+            wandb_project=getattr(self.all_args, 'wandb_project', 'marft-math'),
+            wandb_entity=getattr(self.all_args, 'wandb_entity', None),
+            wandb_run_name=getattr(self.all_args, 'wandb_run_name', None),
+            config=wandb_config
+        )
 
 
     def run(self):
@@ -80,7 +105,7 @@ class MathRunner:
                     global_step = total_num_steps + step * self.n_rollout_threads + i
                     if dones[i, 0]:
                         episodic_return = infos[i]['episodic_return']
-                        self.writter.add_scalar("episodic return", episodic_return, global_step)
+                        self.logger.add_scalar("episodic return", episodic_return, global_step)
 
             self.before_update()
             train_infos = self.trainer.train(self.buffer, total_num_steps)
@@ -102,7 +127,7 @@ class MathRunner:
                 )
                 train_infos["average_step_rewards"] = avg_step_reward
                 self.log_train(train_infos, total_num_steps)
-                self.writter.add_scalar('average reward', avg_step_reward, training_steps)
+                self.logger.add_scalar('average reward', avg_step_reward, training_steps)
             progress_bar.update(1)
 
     def insert(self, data):
@@ -120,7 +145,7 @@ class MathRunner:
 
     def log_train(self, train_infos, total_num_steps):
         for k, v in train_infos.items():
-            self.writter.add_scalars(k, {k: v}, total_num_steps)
+            self.logger.add_scalars(k, {k: v}, total_num_steps)
 
     @torch.no_grad()
     def eval(self, training_steps):
@@ -161,7 +186,7 @@ class MathRunner:
     def log_eval(self, eval_infos, total_num_steps):
         for k, v in eval_infos.items():
             if len(v) > 0:
-                self.writter.add_scalars(k, {k: np.mean(v)}, total_num_steps)
+                self.logger.add_scalars(k, {k: np.mean(v)}, total_num_steps)
 
     def save(self, steps):
         """Save the MAS policies and critic networks."""

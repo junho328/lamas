@@ -24,7 +24,7 @@ class MAS(ABC):
             algo: str = "APPO", 
             normalization_mode: str = "sum",
             load_path: str = None,
-            load_in_4bit: bool = False,
+            load_in_4bit: bool = True,  # QLoRA 기본값으로 변경
             bf16: bool = True,
             device_map = None,
             **kwargs,
@@ -212,7 +212,7 @@ class MAS(ABC):
             action_tokens: torch.Tensor of shape (rollout_threads/batch_size, num_agents, max_new_tokens)
 
         Returns:
-            token_values: torch.Tensor of shape (rollout_threads/batch_size, num_agents, max_new_tokens, data_dim)
+            token_values: torch.Tensor of shape (rollout_threads/batch_size, num_agents, max_new_tokens, 1)
         """
         rollout_threads, num_agents = obs.shape
         all_values = []

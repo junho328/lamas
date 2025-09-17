@@ -202,4 +202,13 @@ def get_config():
     parser.add_argument("--eval_interval", type=int, default=5, help="time duration between contiunous twice evaluation progress.")
     parser.add_argument("--eval_episodes", type=int, default=10, help="number of episodes of a single evaluation.")
 
+    # logging parameters
+    parser.add_argument("--use_wandb", action="store_true", default=False, help="use wandb for logging instead of tensorboard")
+    parser.add_argument("--wandb_project", type=str, default="lamas-coding", help="wandb project name")
+    parser.add_argument("--wandb_entity", type=str, default="lamas-aipr", help="wandb entity name")
+    parser.add_argument("--wandb_run_name", type=str, default=None, help="wandb run name")
+
+    # reward parameters
+    parser.add_argument("--reward_type", type=str, default="binary", choices=["binary", "continuous"], help="reward type for coding environment")
+
     return parser

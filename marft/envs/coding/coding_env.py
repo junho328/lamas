@@ -18,7 +18,7 @@ def load_profiles(path):
 
 class CodingEnv:
 
-    def __init__(self, rank, model_name, num_agents, profile_path, dataset_path, horizon, mode, seed=None):
+    def __init__(self, rank, model_name, num_agents, profile_path, dataset_path, horizon, mode, seed=None, reward_type="binary"):
         
         self.rank = rank
         self.mode = mode
@@ -31,6 +31,9 @@ class CodingEnv:
         assert self.n_agents == len(self.profiles), "Number of agents must match the number of profiles."
         self.max_steps = horizon
         self.step_count = 0
+        
+        # 보상 설정
+        self.reward_type = reward_type  # "continuous" 또는 "binary"
         
         self.problem = None
         self.label = None
@@ -76,7 +79,6 @@ class CodingEnv:
         
         if score > 0.0 or self.step_count >= self.max_steps:
             dones = np.ones((self.n_agents), dtype=bool)
-            # score -= self.step_count # penalize for more steps
         else:
             dones = np.zeros((self.n_agents), dtype=bool)
             
@@ -95,15 +97,33 @@ class CodingEnv:
         for i, action in enumerate(actions):
             self.current_state = self.current_state + self.profiles[i]["role"] + ": " + action + "\n"
 
-    def compute_reward(self, solution_str, test_cases):
-        res = prime_code.compute_score(solution_str, test_cases, continuous=True)
-
-        if isinstance(res, dict):
+    def _is_correct(self, action):
+        """이진 보상을 위한 정확성 검사 - 모든 테스트 케이스가 통과해야 True"""
+        res = prime_code.compute_score(action, self.label, continuous=False)
+        
+        if isinstance(res, tuple):
+            success, _ = res
+            return success  # True/False
+        elif isinstance(res, bool):
             return res
-        elif isinstance(res, (int, float, bool)):
-            return float(res)
         else:
-            return float(res[0])
+            return False
+
+    def compute_reward(self, solution_str, test_cases):
+        """보상 타입에 따라 다른 보상 계산 방식 사용"""
+        if self.reward_type == "binary":
+            # 이진 보상: 모든 테스트 통과 시 1.0, 아니면 0.0
+            return 1.0 if self._is_correct(solution_str) else 0.0
+        else:
+            # 연속 보상: 테스트 케이스별 성공률
+            res = prime_code.compute_score(solution_str, test_cases, continuous=True)
+
+            if isinstance(res, dict):
+                return res
+            elif isinstance(res, (int, float, bool)):
+                return float(res)
+            else:
+                return float(res[0])
 
     def seed(self, seed):
         np.random.seed(seed)

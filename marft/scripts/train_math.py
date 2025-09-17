@@ -119,8 +119,8 @@ def main(args):
     if envs is not None:
         envs.close()
 
-    runner.writter.export_scalars_to_json(str(runner.log_dir + "/summary.json"))
-    runner.writter.close()
+    runner.logger.export_scalars_to_json(str(runner.log_dir + "/summary.json"))
+    runner.logger.close()
 
 
 if __name__ == "__main__":
