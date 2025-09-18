@@ -15,24 +15,46 @@ def test_bigcodebench_loading():
     print("Testing BigCodeBench dataset loading from Hugging Face...")
     
     try:
-        # Load train split
-        print("Loading train split...")
-        train_dataset = load_dataset("bigcode/bigcodebench", split="train", version="0.1.4")
-        print(f"✓ Train dataset loaded: {len(train_dataset)} samples")
+        # Load v0.1.4 split
+        print("Loading BigCodeBench v0.1.4 split...")
+        dataset = load_dataset("bigcode/bigcodebench", split="v0.1.4")
+        print(f"✓ Dataset loaded: {len(dataset)} samples")
         
         # Show sample structure
-        if len(train_dataset) > 0:
-            sample = train_dataset[0]
+        if len(dataset) > 0:
+            sample = dataset[0]
             print(f"✓ Sample keys: {list(sample.keys())}")
             print(f"✓ Task ID: {sample.get('task_id', 'N/A')}")
-            print(f"✓ Has question: {'question' in sample}")
+            print(f"✓ Has complete_prompt: {'complete_prompt' in sample}")
+            print(f"✓ Has instruct_prompt: {'instruct_prompt' in sample}")
             print(f"✓ Has test: {'test' in sample}")
             print(f"✓ Has entry_point: {'entry_point' in sample}")
+            print(f"✓ Has canonical_solution: {'canonical_solution' in sample}")
+            print(f"✓ Has code_prompt: {'code_prompt' in sample}")
+            print(f"✓ Has libs: {'libs' in sample}")
         
-        # Load test split
-        print("\nLoading test split...")
-        test_dataset = load_dataset("bigcode/bigcodebench", split="test", version="0.1.4")
-        print(f"✓ Test dataset loaded: {len(test_dataset)} samples")
+        # Split into train/test manually (80/20 split) with fixed seed
+        import random
+        import numpy as np
+        
+        seed = 42
+        random.seed(seed)
+        np.random.seed(seed)
+        
+        total_samples = len(dataset)
+        train_size = int(total_samples * 0.8)
+        
+        # Create reproducible indices
+        indices = list(range(total_samples))
+        random.shuffle(indices)
+        
+        train_indices = indices[:train_size]
+        test_indices = indices[train_size:]
+        
+        train_dataset = dataset.select(train_indices)
+        test_dataset = dataset.select(test_indices)
+        print(f"✓ Train split (seed={seed}): {len(train_dataset)} samples")
+        print(f"✓ Test split (seed={seed}): {len(test_dataset)} samples")
         
         print("\n✓ All tests passed! BigCodeBench dataset is ready to use.")
         return True

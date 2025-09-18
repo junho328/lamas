@@ -7,6 +7,14 @@ from abc import ABC
 from torch.distributions.categorical import Categorical
 from .agent import Agent
 
+# vLLM imports
+try:
+    from vllm import LLM, SamplingParams
+    VLLM_AVAILABLE = True
+except ImportError:
+    VLLM_AVAILABLE = False
+    print("Warning: vLLM not available. Install with 'pip install vllm' to use vLLM features.")
+
 def load_profiles(path):
     with open(path, 'r') as file:
         profiles = json.load(file)
@@ -27,6 +35,10 @@ class MAS(ABC):
             load_in_4bit: bool = True,  # QLoRA 기본값으로 변경
             bf16: bool = True,
             device_map = None,
+            use_vllm: bool = False,
+            vllm_gpu_memory_utilization: float = 0.8,
+            vllm_temperature: float = 0.8,
+            vllm_top_p: float = 0.95,
             **kwargs,
         ):
         self.algo = algo
@@ -34,6 +46,11 @@ class MAS(ABC):
         self.num_agents = num_agents
         self.device = "cuda:0"
 
+        # vLLM configuration
+        self.use_vllm = use_vllm
+        self.vllm_gpu_memory_utilization = vllm_gpu_memory_utilization
+        self.vllm_temperature = vllm_temperature
+        self.vllm_top_p = vllm_top_p
 
         self.context_window = context_window
         self.max_new_tokens = max_new_tokens
@@ -59,6 +76,11 @@ class MAS(ABC):
         )
         self.tokenizer = self.agents[0].tokenizer
         self.critic = self._init_critic(model_path, load_path).to(self.device)
+        
+        # Initialize vLLM if requested
+        self.vllm_model = None
+        if self.use_vllm and VLLM_AVAILABLE:
+            self._init_vllm(model_path)
 
     def _init_agents(
         self,
@@ -100,6 +122,21 @@ class MAS(ABC):
             print(f"Load critic from {critic_path}")
         return critic
 
+    def _init_vllm(self, model_path: str):
+        """Initialize vLLM for faster token generation."""
+        try:
+            self.vllm_model = LLM(
+                model=model_path,
+                gpu_memory_utilization=self.vllm_gpu_memory_utilization,
+                trust_remote_code=True,
+                max_model_len=self.context_window,
+            )
+            print(f"Initialized vLLM model for faster generation")
+        except Exception as e:
+            print(f"Failed to initialize vLLM model: {e}")
+            print("Falling back to standard generation")
+            self.use_vllm = False
+
     @torch.no_grad()
     def get_actions_sequential(self, obs: np.ndarray):
         """
@@ -126,35 +163,64 @@ class MAS(ABC):
         for agent_idx in range(num_agents):
             prompts = [prompt + "<|im_start|>" + self.profiles[agent_idx]["role"] + ": " for prompt in prompts]
             prompts_with_profile = [self.profiles[agent_idx]["prompt"] + prompt for prompt in prompts]
-            token_seq = self.tokenizer(prompts_with_profile, return_tensors="pt", padding=True)
-            device = self.agents[agent_idx].device
-            input_ids = token_seq["input_ids"].to(device)
-            attn_mask = token_seq["attention_mask"].to(device)
-            output = self.agents[agent_idx].generate(
-                input_ids,
-                attention_mask=attn_mask,
-                do_sample=True,
-                top_k=50,
-                temperature=0.5,
-                max_new_tokens=self.max_new_tokens,
-                eos_token_id=self.tokenizer.eos_token_id,
-                pad_token_id=self.tokenizer.pad_token_id,
-                return_dict_in_generate=True,
-            )
-            sequences = output.sequences
-            actions = []
-            for i in range(rollout_threads):
-                action_token = sequences[i][input_ids[i].shape[0] :]
-                all_action_tokens[i, agent_idx, : action_token.shape[0]] = action_token.cpu().clone()
-                action = self.tokenizer.decode(action_token, skip_special_tokens=True)
+            
+            # Use vLLM for generation if available
+            if self.use_vllm and self.vllm_model is not None:
+                actions = self._generate_with_vllm(prompts_with_profile)
+                # Tokenize the generated actions for consistency
+                for i, action in enumerate(actions):
+                    action_tokens = self.tokenizer.encode(action, add_special_tokens=False)
+                    if len(action_tokens) > self.max_new_tokens:
+                        action_tokens = action_tokens[:self.max_new_tokens]
+                    all_action_tokens[i, agent_idx, :len(action_tokens)] = torch.tensor(action_tokens, dtype=torch.int64)
+            else:
+                # Standard generation
+                token_seq = self.tokenizer(prompts_with_profile, return_tensors="pt", padding=True)
+                device = self.agents[agent_idx].device
+                input_ids = token_seq["input_ids"].to(device)
+                attn_mask = token_seq["attention_mask"].to(device)
+                output = self.agents[agent_idx].generate(
+                    input_ids,
+                    attention_mask=attn_mask,
+                    do_sample=True,
+                    top_k=50,
+                    temperature=0.5,
+                    max_new_tokens=self.max_new_tokens,
+                    eos_token_id=self.tokenizer.eos_token_id,
+                    pad_token_id=self.tokenizer.pad_token_id,
+                    return_dict_in_generate=True,
+                )
+                sequences = output.sequences
+                actions = []
+                for i in range(rollout_threads):
+                    action_token = sequences[i][input_ids[i].shape[0] :]
+                    all_action_tokens[i, agent_idx, : action_token.shape[0]] = action_token.cpu().clone()
+                    action = self.tokenizer.decode(action_token, skip_special_tokens=True)
+                    actions.append(action)
+            
+            # Update prompts with generated actions
+            for i, action in enumerate(actions):
                 prompts[i] = prompts[i] + action + "<|im_end|>\n"
-                actions.append(action)
+            
             actions = np.array(actions, dtype=np.object_)
             all_obs[:, agent_idx] = np.array(prompts_with_profile, dtype=np.object_)
             all_actions[:, agent_idx] = actions
 
         return all_obs, all_actions, all_action_tokens
 
+    def _generate_with_vllm(self, prompts: list) -> list:
+        """Generate completions using vLLM."""
+        sampling_params = SamplingParams(
+            temperature=self.vllm_temperature,
+            top_p=self.vllm_top_p,
+            top_k=50,
+            max_tokens=self.max_new_tokens,
+            repetition_penalty=1.0,
+        )
+        
+        outputs = self.vllm_model.generate(prompts, sampling_params)
+        completions = [output.outputs[0].text for output in outputs]
+        return completions
 
     def get_slice(self, logits: torch.Tensor, obs_full_lengths: int, act_real_lengths: torch.Tensor) -> torch.Tensor:
         """

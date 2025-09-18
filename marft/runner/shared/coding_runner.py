@@ -30,6 +30,11 @@ class CodingRunner:
             algo=self.algo,
             normalization_mode=self.all_args.normalization_mode,
             load_path=self.all_args.load_path,
+            # vLLM parameters
+            use_vllm=getattr(self.all_args, 'use_vllm', False),
+            vllm_gpu_memory_utilization=getattr(self.all_args, 'vllm_gpu_memory_utilization', 0.8),
+            vllm_temperature=getattr(self.all_args, 'vllm_temperature', 0.8),
+            vllm_top_p=getattr(self.all_args, 'vllm_top_p', 0.95),
         )
 
         if self.algo == "APPO":

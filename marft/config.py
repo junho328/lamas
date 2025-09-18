@@ -211,4 +211,10 @@ def get_config():
     # reward parameters
     parser.add_argument("--reward_type", type=str, default="binary", choices=["binary", "continuous"], help="reward type for coding environment")
 
+    # vLLM parameters
+    parser.add_argument("--use_vllm", action="store_true", default=False, help="use vLLM for faster token generation")
+    parser.add_argument("--vllm_gpu_memory_utilization", type=float, default=0.8, help="GPU memory utilization for vLLM")
+    parser.add_argument("--vllm_temperature", type=float, default=0.8, help="temperature for vLLM generation")
+    parser.add_argument("--vllm_top_p", type=float, default=0.95, help="top_p for vLLM generation")
+
     return parser

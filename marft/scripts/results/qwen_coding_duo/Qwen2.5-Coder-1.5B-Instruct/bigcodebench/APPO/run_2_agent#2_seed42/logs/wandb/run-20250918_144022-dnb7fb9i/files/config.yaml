@@ -1,0 +1,213 @@
+_wandb:
+    value:
+        cli_version: 0.21.0
+        e:
+            pgnmyl6qugkkejn7h8xiuat2550t8dw6:
+                args:
+                    - --algorithm_name
+                    - APPO
+                    - --experiment_name
+                    - qwen_coding_duo
+                    - --seed
+                    - "42"
+                    - --cuda
+                    - --n_training_threads
+                    - "1"
+                    - --n_rollout_threads
+                    - "16"
+                    - --n_eval_rollout_threads
+                    - "1"
+                    - --num_env_steps
+                    - "1000000"
+                    - --horizon
+                    - "1"
+                    - --env_name
+                    - CODING
+                    - --dataset_name
+                    - bigcodebench
+                    - --train_dataset_path
+                    - data/bigcodebench_instruct_train_marft.json
+                    - --test_dataset_path
+                    - data/bigcodebench_instruct_test_marft.json
+                    - --flag
+                    - train
+                    - --model_name_or_path
+                    - Qwen/Qwen2.5-Coder-1.5B-Instruct
+                    - --max_new_tokens
+                    - "512"
+                    - --n_agents
+                    - "2"
+                    - --profile_path
+                    - scripts/profiles/qwen_coding_duo.json
+                    - --context_window
+                    - "2048"
+                    - --episode_length
+                    - "200"
+                    - --warmup_steps
+                    - "0"
+                    - --hidden_size
+                    - "64"
+                    - --use_orthogonal
+                    - --lr
+                    - "5e-7"
+                    - --critic_lr
+                    - "5e-4"
+                    - --opti_eps
+                    - "1e-5"
+                    - --weight_decay
+                    - "0"
+                    - --gradient_cp_steps
+                    - "1"
+                    - --ppo_epoch
+                    - "1"
+                    - --use_clipped_value_loss
+                    - --clip_param
+                    - "0.2"
+                    - --num_mini_batch
+                    - "4"
+                    - --entropy_coef
+                    - "0.01"
+                    - --value_loss_coef
+                    - "1"
+                    - --use_max_grad_norm
+                    - --max_grad_norm
+                    - "0.5"
+                    - --use_gae
+                    - --gamma
+                    - "0.99"
+                    - --gae_lambda
+                    - "0.95"
+                    - --use_proper_time_limits
+                    - --use_huber_loss
+                    - --use_value_active_masks
+                    - --use_policy_active_masks
+                    - --huber_delta
+                    - "10.0"
+                    - --kl_threshold
+                    - "1e-3"
+                    - --use_linear_lr_decay
+                    - --save_interval
+                    - "50"
+                    - --log_interval
+                    - "1"
+                    - --use_eval
+                    - --eval_interval
+                    - "10"
+                    - --eval_episodes
+                    - "10"
+                    - --use_wandb
+                    - --wandb_project
+                    - qwen-coding-marft
+                    - --wandb_entity
+                    - lamas-aipr
+                    - --wandb_run_name
+                    - qwen-coder-duo-qwen2.5-1.5b
+                    - --reward_type
+                    - binary
+                    - --use_vllm
+                    - --vllm_gpu_memory_utilization
+                    - "0.8"
+                    - --vllm_temperature
+                    - "0.8"
+                    - --vllm_top_p
+                    - "0.95"
+                codePath: marft/scripts/train_coding.py
+                codePathLocal: scripts/train_coding.py
+                cpu_count: 96
+                cpu_count_logical: 192
+                cudaVersion: "12.6"
+                disk:
+                    /:
+                        total: "3725523755008"
+                        used: "3548429918208"
+                email: jhna@ai.kaist.ac.kr
+                executable: /home/jhna/lamas/lamas/bin/python
+                git:
+                    commit: 1356b058e05cd1b02893094e9802f52eab152552
+                    remote: https://github.com/junho328/lamas
+                gpu: NVIDIA A100 80GB PCIe
+                gpu_count: 3
+                gpu_nvidia:
+                    - architecture: Ampere
+                      cudaCores: 6912
+                      memoryTotal: "85899345920"
+                      name: NVIDIA A100 80GB PCIe
+                      uuid: GPU-41ccf899-b411-64fb-6261-13071bcbd54a
+                    - architecture: Ampere
+                      cudaCores: 6912
+                      memoryTotal: "85899345920"
+                      name: NVIDIA A100 80GB PCIe
+                      uuid: GPU-d3c8b948-0b8d-341b-42af-29cb295e1a18
+                    - architecture: Ampere
+                      cudaCores: 6912
+                      memoryTotal: "85899345920"
+                      name: NVIDIA A100 80GB PCIe
+                      uuid: GPU-8682e7ef-41eb-6d69-075a-1f156828fffe
+                host: odin2
+                memory:
+                    total: "269416857600"
+                os: Linux-5.14.0-427.40.1.el9_4.x86_64-x86_64-with-glibc2.34
+                program: /home/jhna/lamas/marft/scripts/train_coding.py
+                python: CPython 3.10.18
+                root: /home/jhna/lamas/marft/scripts/results/qwen_coding_duo/Qwen2.5-Coder-1.5B-Instruct/bigcodebench/APPO/run_2_agent#2_seed42/logs
+                startedAt: "2025-09-18T05:40:22.586877Z"
+                writerId: pgnmyl6qugkkejn7h8xiuat2550t8dw6
+        m: []
+        python_version: 3.10.18
+        t:
+            "1":
+                - 1
+                - 5
+                - 11
+                - 30
+                - 41
+                - 49
+                - 53
+                - 71
+                - 95
+                - 98
+            "2":
+                - 1
+                - 5
+                - 11
+                - 30
+                - 41
+                - 49
+                - 53
+                - 71
+                - 95
+                - 98
+            "3":
+                - 13
+                - 16
+            "4": 3.10.18
+            "5": 0.21.0
+            "6": 4.52.3
+            "12": 0.21.0
+            "13": linux-x86_64
+algorithm:
+    value: APPO
+context_window:
+    value: 2048
+critic_lr:
+    value: 0.0005
+dataset_name:
+    value: bigcodebench
+episode_length:
+    value: 200
+learning_rate:
+    value: 5e-07
+max_new_tokens:
+    value: 512
+model_name:
+    value: Qwen/Qwen2.5-Coder-1.5B-Instruct
+n_rollout_threads:
+    value: 16
+num_agents:
+    value: 2
+num_mini_batch:
+    value: 4
+ppo_epochs:
+    value: 1
+seed:
+    value: 42

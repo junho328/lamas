@@ -1,3 +1,5 @@
+torch==2.6.0
+torchvision==0.21.0
 absl_py
 cloudpickle
 fairscale
@@ -13,6 +15,7 @@ tensorboardX
 # torchvision # some version
 # torchaudio # some version
 numpy==1.26.3
-xformers==0.0.27.post2
+vllm==0.8.5.post1
+xformers==0.0.29.post2
 latex2sympy2
 word2number

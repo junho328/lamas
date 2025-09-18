@@ -1,0 +1,39 @@
+Initialized wandb logging for project: qwen-coding-marft
+Processed prompts: 100%|███████████| 16/16 [00:07<00:00,  2.20it/s, est. speed input: 501.52 toks/s, output: 945.43 toks/s]
+Processed prompts: 100%|██████████| 16/16 [00:07<00:00,  2.19it/s, est. speed input: 1441.43 toks/s, output: 692.24 toks/s]
+Traceback (most recent call last):| 12/16 [00:07<00:02,  1.56it/s, est. speed input: 1027.86 toks/s, output: 412.76 toks/s]
+  File "/home/jhna/lamas/marft/scripts/train_coding.py", line 133, in <module>
+    main(sys.argv[1:])
+  File "/home/jhna/lamas/marft/scripts/train_coding.py", line 123, in main
+    runner.run()
+  File "/home/jhna/lamas/marft/runner/shared/coding_runner.py", line 102, in run
+    rollout_obs, actions, action_tokens, values, log_probs = self.mas.infer_for_rollout(self.buffer.obs[self.buffer.cur_batch_index, step])
+  File "/home/jhna/lamas/lamas/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/jhna/lamas/marft/mas/mas.py", line 437, in infer_for_rollout
+    action_log_probs, _ = self.get_joint_action_log_probs(rollout_obs, rollout_action_tokens, batch_infer=False)
+  File "/home/jhna/lamas/marft/mas/mas.py", line 410, in get_joint_action_log_probs
+    logits, _ = self.get_token_logits(obs, action_tokens, agent_index=agent_to_train, batch_infer=batch_infer)
+  File "/home/jhna/lamas/marft/mas/mas.py", line 349, in get_token_logits
+    pi_logits.append(self.get_slice(pi_outputs.logits, obs_full_lengths, act_real_lengths).to(self.device))
+  File "/home/jhna/lamas/marft/mas/mas.py", line 235, in get_slice
+    sliced_logits = torch.empty(act_real_lengths.shape[0], act_real_lengths.shape[1], self.max_new_tokens, logits.shape[-1]).to(logits.device)
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 4.64 GiB. GPU 0 has a total capacity of 79.25 GiB of which 895.62 MiB is free. Process 257177 has 35.88 GiB memory in use. Including non-PyTorch memory, this process has 19.00 GiB memory in use. Process 264526 has 23.48 GiB memory in use. Of the allocated memory 16.83 GiB is allocated by PyTorch, and 1.67 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+Traceback (most recent call last):
+  File "/home/jhna/lamas/marft/scripts/train_coding.py", line 133, in <module>
+    main(sys.argv[1:])
+  File "/home/jhna/lamas/marft/scripts/train_coding.py", line 123, in main
+    runner.run()
+  File "/home/jhna/lamas/marft/runner/shared/coding_runner.py", line 102, in run
+    rollout_obs, actions, action_tokens, values, log_probs = self.mas.infer_for_rollout(self.buffer.obs[self.buffer.cur_batch_index, step])
+  File "/home/jhna/lamas/lamas/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/jhna/lamas/marft/mas/mas.py", line 437, in infer_for_rollout
+    action_log_probs, _ = self.get_joint_action_log_probs(rollout_obs, rollout_action_tokens, batch_infer=False)
+  File "/home/jhna/lamas/marft/mas/mas.py", line 410, in get_joint_action_log_probs
+    logits, _ = self.get_token_logits(obs, action_tokens, agent_index=agent_to_train, batch_infer=batch_infer)
+  File "/home/jhna/lamas/marft/mas/mas.py", line 349, in get_token_logits
+    pi_logits.append(self.get_slice(pi_outputs.logits, obs_full_lengths, act_real_lengths).to(self.device))
+  File "/home/jhna/lamas/marft/mas/mas.py", line 235, in get_slice
+    sliced_logits = torch.empty(act_real_lengths.shape[0], act_real_lengths.shape[1], self.max_new_tokens, logits.shape[-1]).to(logits.device)
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 4.64 GiB. GPU 0 has a total capacity of 79.25 GiB of which 895.62 MiB is free. Process 257177 has 35.88 GiB memory in use. Including non-PyTorch memory, this process has 19.00 GiB memory in use. Process 264526 has 23.48 GiB memory in use. Of the allocated memory 16.83 GiB is allocated by PyTorch, and 1.67 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

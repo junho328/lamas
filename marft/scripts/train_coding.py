@@ -6,7 +6,11 @@ from pathlib import Path
 import torch
 import yaml
 
-sys.path.append("../../")
+# Add the marft package root to Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+marft_root = os.path.dirname(current_dir)  # Go up one level from scripts/ to marft/
+parent_dir = os.path.dirname(marft_root)  # Go up one more level to /home/jhna/lamas/
+sys.path.insert(0, parent_dir)
 from marft.config import get_config
 from marft.envs.coding.coding_env import CodingEnv
 from marft.envs.env_wrappers import ShareSubprocVecEnv, ShareDummyVecEnv

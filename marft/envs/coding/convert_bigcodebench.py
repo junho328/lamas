@@ -5,8 +5,20 @@ Convert BigCodeBench dataset to MARFT coding environment format.
 This script converts BigCodeBench JSON data to the format expected by the MARFT coding environment.
 Supports both regular BigCodeBench and BigCodeBench Instruct datasets.
 Can load data from Hugging Face datasets or local JSON files.
+
+BigCodeBench dataset structure:
+- task_id: Unique identifier for the task
+- complete_prompt: Full problem description (used for regular subset)
+- instruct_prompt: Instruction-based prompt (used for instruct subset)
+- canonical_solution: Reference solution
+- code_prompt: Code-specific prompt
+- test: Test cases for validation
+- entry_point: Function entry point
+- doc_struct: Documentation structure
+- libs: Required libraries
+
 The output format includes:
-- prompt: The problem description
+- prompt: The problem description (from complete_prompt or instruct_prompt)
 - reward_model: Contains ground_truth (test cases)
 """
 
@@ -14,9 +26,11 @@ import json
 import argparse
 from pathlib import Path
 from datasets import load_dataset
+import random
+import numpy as np
 
 
-def load_bigcodebench_data(input_source: str, split: str = "train", dataset_type: str = "regular"):
+def load_bigcodebench_data(input_source: str, split: str = "train", dataset_type: str = "regular", seed: int = 42):
     """
     Load BigCodeBench data from Hugging Face or local file.
     
@@ -24,6 +38,7 @@ def load_bigcodebench_data(input_source: str, split: str = "train", dataset_type
         input_source: Hugging Face dataset name or path to local JSON file
         split: Dataset split (train/test)
         dataset_type: Type of dataset ("regular" or "instruct")
+        seed: Random seed for reproducible train/test split
     
     Returns:
         List of data items
@@ -32,8 +47,32 @@ def load_bigcodebench_data(input_source: str, split: str = "train", dataset_type
         # Load from Hugging Face
         print(f"Loading BigCodeBench {dataset_type} data from Hugging Face: {input_source}")
         try:
-            dataset = load_dataset(input_source, split=split, version="0.1.4")
+            # Load BigCodeBench v0.1.4 split
+            dataset = load_dataset(input_source, split="v0.1.4")
             print(f"Found {len(dataset)} samples in BigCodeBench {dataset_type} dataset")
+            
+            # If split is specified, create train/test split manually with fixed seed
+            if split in ["train", "test"]:
+                # Set seed for reproducible split
+                random.seed(seed)
+                np.random.seed(seed)
+                
+                total_samples = len(dataset)
+                train_size = int(total_samples * 0.8)
+                
+                # Create reproducible indices
+                indices = list(range(total_samples))
+                random.shuffle(indices)
+                
+                if split == "train":
+                    train_indices = indices[:train_size]
+                    dataset = dataset.select(train_indices)
+                else:  # test
+                    test_indices = indices[train_size:]
+                    dataset = dataset.select(test_indices)
+                
+                print(f"Using {split} split (seed={seed}): {len(dataset)} samples")
+            
             return list(dataset)
         except Exception as e:
             print(f"Error loading from Hugging Face: {e}")
@@ -49,7 +88,7 @@ def load_bigcodebench_data(input_source: str, split: str = "train", dataset_type
         print(f"Found {len(bigcodebench_data)} samples in BigCodeBench {dataset_type} dataset")
         return bigcodebench_data
 
-def convert_bigcodebench_to_marft(input_source: str, output_file: str, max_samples: int = None, dataset_type: str = "regular", split: str = "train"):
+def convert_bigcodebench_to_marft(input_source: str, output_file: str, max_samples: int = None, dataset_type: str = "regular", split: str = "train", seed: int = 42, force: bool = False):
     """
     Convert BigCodeBench dataset to MARFT format.
     
@@ -59,9 +98,20 @@ def convert_bigcodebench_to_marft(input_source: str, output_file: str, max_sampl
         max_samples: Maximum number of samples to convert (None for all)
         dataset_type: Type of dataset ("regular" or "instruct")
         split: Dataset split (train/test)
+        seed: Random seed for reproducible train/test split
+        force: Force overwrite existing output file
     """
     
-    bigcodebench_data = load_bigcodebench_data(input_source, split, dataset_type)
+    # Check if output file already exists
+    output_path = Path(output_file)
+    if output_path.exists() and not force:
+        print(f"Output file already exists: {output_file}")
+        print("Skipping conversion. Use --force to overwrite existing file.")
+        return
+    elif output_path.exists() and force:
+        print(f"Output file exists but --force specified. Overwriting: {output_file}")
+    
+    bigcodebench_data = load_bigcodebench_data(input_source, split, dataset_type, seed)
     
     marft_data = []
     converted_count = 0
@@ -91,7 +141,7 @@ def convert_bigcodebench_to_marft(input_source: str, output_file: str, max_sampl
             else:
                 # Regular BigCodeBench format
                 task_id, task_data = item
-                problem_description = task_data.get('question', '')
+                problem_description = task_data.get('complete_prompt', '')
             
             # Extract test cases from the test field
             test_cases = task_data.get('test', '')
@@ -109,7 +159,10 @@ def convert_bigcodebench_to_marft(input_source: str, output_file: str, max_sampl
                 "task_id": task_id,
                 "entry_point": task_data.get('entry_point', 'task_func'),
                 "canonical_solution": task_data.get('canonical_solution', ''),
+                "complete_prompt": task_data.get('complete_prompt', ''),
                 "instruct_prompt": task_data.get('instruct_prompt', ''),
+                "code_prompt": task_data.get('code_prompt', ''),
+                "doc_struct": task_data.get('doc_struct', ''),
                 "libs": task_data.get('libs', [])
             }
             
@@ -144,6 +197,10 @@ def main():
                        help="Dataset split (train/test)")
     parser.add_argument("--dataset_type", choices=["regular", "instruct"], default="regular",
                        help="Type of BigCodeBench dataset (regular or instruct)")
+    parser.add_argument("--seed", type=int, default=42,
+                       help="Random seed for reproducible train/test split")
+    parser.add_argument("--force", action="store_true",
+                       help="Force overwrite existing output file")
     
     args = parser.parse_args()
     
@@ -151,7 +208,7 @@ def main():
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
-    convert_bigcodebench_to_marft(args.input, args.output, args.max_samples, args.dataset_type, args.split)
+    convert_bigcodebench_to_marft(args.input, args.output, args.max_samples, args.dataset_type, args.split, args.seed, args.force)
 
 
 if __name__ == "__main__":

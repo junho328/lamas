@@ -26,8 +26,18 @@ python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.devi
 
 ### 2.1 BigCodeBench 데이터셋 로드
 ```bash
-# Hugging Face에서 직접 BigCodeBench 데이터셋 로드 (v0.1.4)
+# Hugging Face에서 직접 BigCodeBench 데이터셋 로드 (v0.1.4 split)
 # 별도 다운로드 불필요 - 스크립트에서 자동으로 로드됩니다
+# v0.1.4 split은 train/test가 분리되어 있지 않아서 80/20으로 자동 분할됩니다
+
+# BigCodeBench 데이터셋 구조:
+# - task_id: 고유 식별자
+# - complete_prompt: 전체 문제 설명 (regular subset용)
+# - instruct_prompt: 지시사항 기반 프롬프트 (instruct subset용)
+# - canonical_solution: 참조 솔루션
+# - test: 검증용 테스트 케이스
+# - entry_point: 함수 진입점
+# - libs: 필요한 라이브러리
 ```
 
 ### 2.2 데이터셋 변환
@@ -35,26 +45,31 @@ python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.devi
 # Hugging Face에서 BigCodeBench 데이터셋을 MARFT 형식으로 변환
 python envs/coding/convert_bigcodebench.py \
     --input bigcode/bigcodebench \
-    --output data/bigcodebench_marft.json \
+    --output data/bigcodebench_train_marft.json \
     --max_samples 1000 \
     --dataset_type regular \
-    --split train
+    --split train \
+    --seed 42
 
-# 테스트 데이터셋도 변환
+# 테스트 데이터셋도 변환 (같은 seed 사용으로 일관된 분할)
 python envs/coding/convert_bigcodebench.py \
     --input bigcode/bigcodebench \
     --output data/bigcodebench_test_marft.json \
-    --max_samples 100 \
+    --max_samples 200 \
     --dataset_type regular \
-    --split test
+    --split test \
+    --seed 42
 
 # 또는 로컬 JSON 파일 사용
 python envs/coding/convert_bigcodebench.py \
     --input /path/to/bigcodebench.json \
     --output data/bigcodebench_marft.json \
     --max_samples 1000 \
-    --dataset_type regular
+    --dataset_type regular \
+    --seed 42
 ```
+
+**중요**: `--seed` 파라미터를 사용하여 train/test 분할의 재현성을 보장합니다. 같은 seed를 사용하면 항상 동일한 분할 결과를 얻을 수 있습니다.
 
 ## 3. 훈련 실행
 
@@ -79,7 +94,7 @@ python scripts/train_coding.py \
     --model_name_or_path Qwen/Qwen2.5-Coder-1.5B-Instruct \
     --n_agents 2 \
     --profile_path scripts/profiles/qwen_coding_duo.json \
-    --train_dataset_path data/bigcodebench_marft.json \
+    --train_dataset_path data/bigcodebench_train_marft.json \
     --test_dataset_path data/bigcodebench_test_marft.json \
     --lr 5e-7 \
     --critic_lr 5e-4 \
